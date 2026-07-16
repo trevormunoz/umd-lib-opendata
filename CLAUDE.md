@@ -40,21 +40,19 @@ hugo server --logLevel debug --disableFastRender --port 1314 --buildDrafts --bui
 
 ## Python Environment
 
-Python scripts in `static/code/` demonstrate API usage for various UMD Libraries services. These scripts require Python 3.12+ and specific dependencies.
+Python scripts in `static/code/` demonstrate API usage for various UMD Libraries services. Each script is a self-contained [uv script](https://docs.astral.sh/uv/guides/scripts/): it declares its Python version and dependencies in a [PEP 723](https://peps.python.org/pep-0723/) inline metadata block, so no virtual environment or install step is needed.
 
-### Setup Python Environment
+### Running the Examples
 
 ```bash
-# Install Python version from .python-version
-pyenv install --skip-existing $(cat .python-version)
+# uv resolves each script's inline metadata automatically
+uv run static/code/drum-oaipmh.py
 
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+# The published copies work the same way
+uv run https://opendata.lib.umd.edu/code/drum-oaipmh.py
 ```
+
+Requires [uv](https://docs.astral.sh/uv/) (e.g. `brew install uv`).
 
 ### Testing Python Examples
 
@@ -65,20 +63,24 @@ Test all Python code examples to ensure they run correctly:
 task test-python
 
 # Or run directly with options
-python test_python_examples.py --verbose
-python test_python_examples.py --file drum-api.py
+uv run test_python_examples.py --verbose
+uv run test_python_examples.py --file drum-api.py
 ```
 
 See `TEST_PYTHON_EXAMPLES.md` for detailed documentation.
 
 ### Python Dependencies
 
-The `requirements.txt` includes:
+Each script's PEP 723 block pins exact versions of the packages it directly imports:
 
-* `pyoai==2.5.0` - OAI-PMH protocol client for metadata harvesting
+* `pyoai==2.5.0` - OAI-PMH protocol client for metadata harvesting (must be
+  paired with `setuptools==70.2.0`: pyoai imports the legacy `pkg_resources`
+  API, which newer setuptools no longer ships)
 * `rdflib==7.6.0` - RDF and JSON-LD processing for semantic data
 * `requests==2.32.3` - HTTP client for API requests
 * `sru-queryer==2.1.3` - SRU (Search/Retrieve via URL) protocol client
+
+Scripts that use only the standard library declare `dependencies = []` to make that explicit. When adding a new script, declare every third-party import in its metadata block — `task test-python` runs each script via `uv run` and will fail if the block is incomplete.
 
 ## Architecture
 
